@@ -22,15 +22,17 @@ pre { margin: 0; font-family: inherit; }
 b, strong { font-weight: 700; }
 
 /* ---------- header ---------- */
-.top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding-top: 22px; padding-bottom: 14px; }
-.logo { display: flex; align-items: center; gap: 8px; }
+.top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; padding: 12px 22px 10px; }
+.logo { display: flex; align-items: center; gap: 9px; justify-self: start; }
+.logo img { width: 30px; height: 30px; display: block; }
+.logo .wn { font-weight: 800; font-size: 17px; letter-spacing: .02em; color: var(--ink); } .logo .wn i { font-style: normal; color: var(--green2); }
 .logo pre { font-size: 6.6px; line-height: 1.16; font-weight: 600; letter-spacing: 0; }
 .logo .ln { color: var(--ink); } .logo .lg { color: var(--green); } .logo .ld { color: var(--green2); } .logo .lp { color: var(--pale); }
 .logo pre .f { color: var(--green); font-weight: 700; } .logo pre .s { color: var(--ink); font-weight: 700; }
 .nav { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
 .nav a { color: var(--mid); padding: 6px 2px; } .nav a:hover { color: var(--ink); }
 .nav a.on { color: var(--ink); font-weight: 700; } .nav a.on::before { content: '['; } .nav a.on::after { content: ']'; }
-.acts { display: flex; gap: 12px; align-items: center; }
+.acts { display: flex; gap: 12px; align-items: center; justify-self: end; }
 .br { display: inline-flex; align-items: center; gap: 4px; padding: 8px 4px; color: var(--ink); font-weight: 700; background: none; border: 0; cursor: pointer; white-space: nowrap; min-height: 40px; }
 .br::before { content: '['; color: var(--mute); font-weight: 400; margin-right: 4px; } .br::after { content: ']'; color: var(--mute); font-weight: 400; margin-left: 4px; }
 .br:hover { color: var(--green3); } .br .p { color: var(--green2); }
@@ -86,7 +88,7 @@ b, strong { font-weight: 700; }
 .box > .hd .ctl { display: flex; gap: 12px; color: var(--mute); font-size: 12px; align-items: center; }
 .box > .bd { padding: 18px 16px; }
 .sub { color: var(--mid); margin: 0 0 16px; max-width: 76ch; }
-.cols { display: grid; gap: 22px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cols { display: grid; gap: 22px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .k3 { font-size: 11.5px; letter-spacing: .08em; color: var(--mute); text-transform: uppercase; margin-bottom: 8px; }
 
 /* live world board */
@@ -241,6 +243,7 @@ details[open]::details-content { height: auto; }
 .rv { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; } .rv.vis { opacity: 1; transform: none; }
 
 @media (max-width: 1060px) {
+  .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero { grid-template-columns: minmax(0, 1fr); } .globe { justify-self: start; }
   .big { font-size: min(1.2vw, 9.6px); }
   .lgrid { grid-template-columns: minmax(0, 1fr); } .side { position: static; }
@@ -250,7 +253,7 @@ details[open]::details-content { height: auto; }
   .cols, .tpls { grid-template-columns: minmax(0, 1fr); }
   .facts, .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .facts > div, .stats > div { border-bottom: 1px dashed var(--pale); }
   .pipe .st { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .top { grid-template-columns: auto auto; } .nav { grid-column: 1 / -1; order: 3; justify-content: flex-start; gap: 16px; }
+  .top { grid-template-columns: auto auto; } .nav { grid-column: 1 / -1; order: 3; justify-content: center; gap: 16px; }
   .dgrid { grid-template-columns: minmax(0, 1fr); } .dnav { position: static; display: flex; flex-wrap: wrap; gap: 4px 14px; } .dnav .h { width: 100%; }
 }
 @media (max-width: 640px) {
@@ -265,6 +268,6 @@ details[open]::details-content { height: auto; }
   .chead { grid-template-columns: 72px minmax(0, 1fr); } .chead img { width: 72px; height: 72px; } .chead .r2 { grid-column: 1 / -1; }
   .tbl .hide-s { display: none; }
   .acts .br:not(.launchb) { display: none; }
-  .top { gap: 10px; } .logo pre { font-size: 5.6px; } .nav { gap: 12px; font-size: 12.5px; }
+  .top { gap: 10px; padding-left: 14px; padding-right: 14px; } .nav { gap: 12px; font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) { .tape .in, .cur { animation: none; } .rv { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
