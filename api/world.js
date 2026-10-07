@@ -25,6 +25,7 @@ async function probe(res) {
     t('price · coinbase', async () => { const p = await WD.price('SOL'); return { ok: p.ok, sample: p.ok ? 'SOL ' + W.usd(p.price) : null }; }),
     t('weather · open-meteo', async () => { const w = await WD.weather(51.509, -0.126); return { ok: w.ok, sample: w.ok ? `London ${w.temp}°C ${w.desc}` : null }; }),
     t('sports · espn', async () => { const g = await WD.lastGame('eng.1', '359'); return { ok: g.ok, sample: g.ok && g.last ? `${g.last.me} ${g.last.score} ${g.last.them}` : null }; }),
+    t('events · polymarket', async () => { const m = await WD.markets('politics'); return { ok: m.ok, sample: m.ok ? m.markets[0].q.slice(0, 40) + ' · YES ' + m.markets[0].yes + '%' : null }; }),
     t('posts · x', async () => { const x = await WD.posts('solana'); return { ok: x.ok, sample: x.ok && x.posts[0] ? '@solana: ' + x.posts[0].text.slice(0, 40) : null }; }),
     t('chain · solana rpc', async () => { const s = await L.rpc('getSlot', [{ commitment: 'confirmed' }]); return { ok: s > 0, sample: 'slot ' + s }; }),
   ]);
@@ -39,6 +40,8 @@ module.exports = async (req, res) => {
     if (op === 'leagues') return L.send(res, 200, { ok: true, leagues: W.LEAGUES }, L.CACHE(86400));
     if (op === 'teams') return L.send(res, 200, { ok: true, teams: await WD.teams(String(qy.league || '')) }, L.CACHE(21600));
     if (op === 'game') return L.send(res, 200, await WD.lastGame(String(qy.league || ''), String(qy.team || '')), L.CACHE(60));
+    if (op === 'markets') return L.send(res, 200, await WD.markets(String(qy.cat || '')), L.CACHE(90));
+    if (op === 'market') return L.send(res, 200, await WD.market(String(qy.id || '')), L.CACHE(45));
     if (op === 'posts') return L.send(res, 200, await WD.posts(String(qy.h || '')), L.CACHE(60));
     if (op === 'price') return L.send(res, 200, await WD.price(String(qy.a || '').toUpperCase()), L.CACHE(20));
     if (op === 'weather') return L.send(res, 200, await WD.weather(qy.lat, qy.lon), L.CACHE(120));

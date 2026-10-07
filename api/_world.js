@@ -147,6 +147,39 @@ async function posts(handle) {
   });
 }
 
+// ---------- world events: Polymarket's public odds (war, politics, money, sports, crypto, tech) ----------
+const GAMMA = 'https://gamma-api.polymarket.com';
+const parseArr = v => { try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch { return []; } };
+function mkt(m, ev) {
+  const outs = parseArr(m.outcomes), px = parseArr(m.outcomePrices).map(Number);
+  const yi = outs.findIndex(o => /^yes$/i.test(o)); if (yi < 0 || !isFinite(px[yi])) return null;
+  const slug = (ev && ev.slug) || ((m.events || [])[0] || {}).slug || m.slug || '';
+  const yes = px[yi], closed = !!m.closed;
+  return { id: String(m.id), q: String(m.question || ''), slug, yes: Math.round(yes * 1000) / 10, closed, resolved: closed && (yes >= .99 || yes <= .01) ? (yes >= .99 ? 'YES' : 'NO') : null,
+    end: m.endDate || null, vol: Number(m.volume24hr || m.volume || 0), src: 'https://polymarket.com/event/' + slug };
+}
+async function markets(cat) {
+  const c = W.CATS.find(x => x.id === cat); if (!c) return { ok: false, error: 'unknown kind' };
+  return L.remember('pm:' + cat, 120000, async () => {
+    const r = await L.getJson(`${GAMMA}/events?tag_slug=${c.tag}&active=true&closed=false&order=volume24hr&ascending=false&limit=20`, {}, 9000);
+    const evs = Array.isArray(r.json) ? r.json : [];
+    const list = [];
+    for (const ev of evs) for (const m of (ev.markets || [])) { if (m.closed || m.active === false) continue; const x = mkt(m, ev); if (x && x.q) list.push(x); }
+    list.sort((a, b) => b.vol - a.vol);
+    if (!list.length) return { ok: false, error: 'polymarket did not answer', src: 'https://polymarket.com' };
+    return { ok: true, cat, markets: list.slice(0, 14), src: 'https://polymarket.com/' + c.tag, at: now() };
+  });
+}
+async function market(id) {
+  if (!/^\d{1,12}$/.test(String(id))) return { ok: false };
+  return L.remember('pmm:' + id, 60000, async () => {
+    const r = await L.getJson(`${GAMMA}/markets/${id}`, {}, 8000);
+    const m = r.json && !Array.isArray(r.json) ? r.json : Array.isArray(r.json) ? r.json[0] : null;
+    const x = m ? mkt(m) : null;
+    return x ? { ok: true, ...x, at: now() } : { ok: false, error: 'polymarket did not answer', src: 'https://polymarket.com' };
+  });
+}
+
 // ---------- the coin itself ----------
 async function coinMarket(mint) {
   if (!L.isAddr(mint)) return { ok: false };
@@ -180,6 +213,14 @@ async function evaluate(r, ctx = {}) {
       if (r.op === 'below') return { ok: true, now: p.price < r.value, text: `${r.asset} ${fmt} (coinbase)`, src: p.src };
       const ch = r.win === '24h' ? p.ch24h : p.ch1h; if (ch == null) return { ok: false, text: `${r.asset}: no candles`, src: p.src };
       return { ok: true, now: r.op === 'up' ? ch >= r.value : ch <= -r.value, text: `${r.asset} ${ch > 0 ? '+' : ''}${ch}% in ${r.win} (now ${fmt})`, src: p.src };
+    }
+    if (r.src === 'events') {
+      const m = await market(r.market.id); if (!m.ok) return { ok: false, text: 'event odds offline', src: m.src };
+      const base = `“${m.q.slice(0, 80)}” · YES ${m.yes}%${m.resolved ? ' · resolved ' + m.resolved : ''}`;
+      if (r.op === 'above') return { ok: true, now: !m.closed && m.yes > r.value, text: base, src: m.src };
+      if (r.op === 'below') return { ok: true, now: !m.closed && m.yes < r.value, text: base, src: m.src };
+      const hit = m.resolved === (r.op === 'yes' ? 'YES' : 'NO');
+      return { ok: true, now: hit, key: hit ? 'r' + m.id : null, text: base, src: m.src };
     }
     if (r.src === 'weather') {
       const w = await weather(r.city.lat, r.city.lon); if (!w.ok) return { ok: false, text: `${r.city.name}: weather source offline`, src: w.src };
@@ -223,14 +264,16 @@ async function evaluate(r, ctx = {}) {
 const CITIES = [{ name: 'London', lat: 51.509, lon: -0.126 }, { name: 'New York', lat: 40.713, lon: -74.006 }, { name: 'Tokyo', lat: 35.69, lon: 139.692 }, { name: 'Dubai', lat: 25.077, lon: 55.309 }];
 async function board() {
   return L.remember('board', 25000, async () => {
-    const [px, wx, sb] = await Promise.all([
+    const [px, wx, sb, ev] = await Promise.all([
       Promise.all(['SOL', 'BTC', 'ETH'].map(a => price(a).catch(() => ({ ok: false, asset: a })))),
       Promise.all(CITIES.map(c => weather(c.lat, c.lon).then(w => ({ ...w, city: c.name })).catch(() => ({ ok: false, city: c.name })))),
       Promise.all(['eng.1', 'nba', 'nfl', 'uefa.champions'].map(id => scoreboard(id).catch(() => []))),
+      Promise.all(['war', 'politics', 'money'].map(c => markets(c).catch(() => ({ ok: false, cat: c })))),
     ]);
     const games = sb.flat().sort((a, b) => (b.state === 'in') - (a.state === 'in') || Math.abs(new Date(a.date) - Date.now()) - Math.abs(new Date(b.date) - Date.now())).slice(0, 6);
-    return { prices: px, weather: wx, games, at: now() };
+    const events = ev.map((e, i) => e.ok ? { cat: e.cat, ...e.markets[0] } : { cat: ['war', 'politics', 'money'][i], ok: false });
+    return { prices: px, weather: wx, games, events, at: now() };
   });
 }
 
-module.exports = { price, weather, geo, teams, lastGame, scoreboard, posts, coinMarket, evaluate, board, WMO };
+module.exports = { price, weather, geo, teams, lastGame, scoreboard, posts, markets, market, coinMarket, evaluate, board, WMO };
