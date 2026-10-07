@@ -313,3 +313,11 @@ a.u, .prose a { transition: text-decoration-color .2s; }
 #evTabs .br { position: relative; } #evTabs .br.on::before { color: var(--green2); }
 @media (prefers-reduced-motion: reduce) { .pop, .hero .big, .hero .lede, .hero .cta, .hero .ca, .hero .globe, .top, .tape, .tag { animation: none !important; } .tpl:hover { transform: none; } }
 .rv:not(.vis) .pop { animation-play-state: paused; }
+
+/* the living background sits between the paper and the page */
+#bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; animation: bgin 1.6s ease both .4s; }
+@keyframes bgin { from { opacity: 0; } to { opacity: 1; } }
+body { position: relative; }
+@keyframes paper { to { background-position: 32px 32px; } }
+html { animation: paper 40s linear infinite; }
+@media (prefers-reduced-motion: reduce) { html { animation: none; } }
