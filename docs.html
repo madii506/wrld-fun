@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f6f3ec">
+<link rel="icon" href="/assets/img/fav32.png" sizes="32x32"><link rel="icon" href="/assets/img/fav64.png" sizes="64x64"><link rel="apple-touch-icon" href="/assets/img/fav180.png">
+<meta property="og:type" content="website"><meta property="og:site_name" content="wrld"><meta property="og:image" content="https://wrld-fun.vercel.app/assets/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://wrld-fun.vercel.app/assets/img/og.jpg">
+<link rel="preload" href="/assets/fonts/jbm.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/w.css?v=2">
+<script>window.WRLD_CONFIG = { ca: '', x: '' };</script>
+
+<title>wrld · docs</title>
+<meta name="description" content="How wrld works: the rulebook language, the sensors, the engine, custody, costs and failure paths.">
+<meta property="og:title" content="wrld · docs">
+</head>
+<body data-page="docs">
+<header class="wrap top">
+  <a class="logo" href="/" aria-label="wrld home"><pre aria-hidden="true">       <span class="ln">----------</span>
+    <span class="ln">///</span> <span class="lg">####</span>   <span class="lg">##</span><span class="ln">\\\</span>
+   <span class="ln">/</span> <span class="lg">####</span>      <span class="lg">####</span> <span class="ln">\</span>
+  <span class="ln">/</span><span class="lg">###</span>         <span class="lg">#</span>    <span class="ld">@</span><span class="ln">\</span>
+ <span class="ln">|</span><span class="lg">#</span>            <span class="lg">####</span><span class="ld">@@@</span><span class="ln">|</span>
+ <span class="ln">|</span>            <span class="lg">####</span><span class="ld">@@@@</span><span class="ln">|</span>
+ <span class="ln">|</span>  <span class="lg">###</span>        <span class="lg">##</span><span class="ld">@@@@@</span><span class="ln">|</span>
+ <span class="ln">|</span>  <span class="lg">#####</span>        <span class="lp">::</span><span class="ld">@@@</span><span class="ln">|</span>
+  <span class="ln">\</span>  <span class="lg">#####</span>     <span class="lp">::::</span><span class="ld">@@</span><span class="ln">/</span>
+   <span class="ln">\</span>  <span class="lg">###</span>  <span class="lp">::::::::</span> <span class="ln">/</span>
+    <span class="ln">\\\</span><span class="lp">::::::::::</span><span class="ln">///</span>
+       <span class="ln">----------</span></pre><pre aria-hidden="true">                        <span class="f">##</span><span class="s">\</span>       <span class="f">##</span><span class="s">\</span>
+                        <span class="f">##</span> <span class="s">|</span>      <span class="f">##</span> <span class="s">|</span>
+<span class="f">##</span><span class="s">\</span>  <span class="f">##</span><span class="s">\</span>  <span class="f">##</span><span class="s">\</span>  <span class="f">######</span><span class="s">\</span>  <span class="f">##</span> <span class="s">|</span> <span class="f">#######</span> <span class="s">|</span>
+<span class="f">##</span> <span class="s">|</span> <span class="f">##</span> <span class="s">|</span> <span class="f">##</span> <span class="s">|</span><span class="f">##</span>  <span class="s">__</span><span class="f">##</span><span class="s">\</span> <span class="f">##</span> <span class="s">|</span><span class="f">##</span>  <span class="s">__</span><span class="f">##</span> <span class="s">|</span>
+<span class="f">##</span> <span class="s">|</span> <span class="f">##</span> <span class="s">|</span> <span class="f">##</span> <span class="s">|</span><span class="f">##</span> <span class="s">|</span>  <span class="s">\__|</span><span class="f">##</span> <span class="s">|</span><span class="f">##</span> <span class="s">/</span>  <span class="f">##</span> <span class="s">|</span>
+<span class="f">##</span> <span class="s">|</span> <span class="f">##</span> <span class="s">|</span> <span class="f">##</span> <span class="s">|</span><span class="f">##</span> <span class="s">|</span>      <span class="f">##</span> <span class="s">|</span><span class="f">##</span> <span class="s">|</span>  <span class="f">##</span> <span class="s">|</span>
+<span class="s">\</span><span class="f">#####</span><span class="s">\</span><span class="f">####</span>  <span class="s">|</span><span class="f">##</span> <span class="s">|</span>      <span class="f">##</span> <span class="s">|\</span><span class="f">#######</span> <span class="s">|</span>
+ <span class="s">\_____\____/</span> <span class="s">\__|</span>      <span class="s">\__|</span> <span class="s">\_______|</span></pre></a>
+  <nav class="nav" aria-label="main">
+    <a href="/" data-nav="home">home</a><a href="/launch" data-nav="launch">launch</a><a href="/#coins" data-nav="coins">coins</a><a href="/#engine" data-nav="how">how it works</a><a href="/docs" data-nav="docs">docs</a>
+  </nav>
+  <div class="acts"><a class="br launchb" href="/launch"><span class="p">+</span> launch</a><button class="br" type="button" data-connect>connect</button></div>
+</header>
+<div class="tape" id="tape" aria-label="live readings"><div class="in"><span class="it dim">reading the world…</span><span class="sep">//</span><span class="it dim">reading the world…</span><span class="sep">//</span></div></div>
+
+<main class="wrap dgrid">
+  <nav class="dnav" aria-label="docs">
+    <div class="h">start</div><a href="#overview">overview</a><a href="#launching">launching</a>
+    <div class="h">rules</div><a href="#language">the language</a><a href="#sensors">sensors</a><a href="#actions">actions</a><a href="#firing">when a rule fires</a>
+    <div class="h">engine</div><a href="#custody">custody</a><a href="#fees">fees and the chest</a><a href="#sources">sources, live</a><a href="#failures">failure paths</a><a href="#api">api</a>
+  </nav>
+  <article class="prose">
+    <h1>wrld docs</h1>
+    <div class="meta3">5 min read · <a href="#" data-copy-link>copy link</a></div>
+    <div class="note"><b>the uncomfortable part first.</b> wrld is custodial. The engine holds each coin’s wallet, the wallet that pump.fun pays creator fees to, and it spends from it when rules fire. That is the only way a rule can act without someone signing. It is the same model rulr uses. Everything below is about what that wallet can and can’t do, and how to check it.</div>
+
+    <h2 id="overview"><span class="e">01</span>overview</h2>
+    <p>Every coin launched on wrld comes with a rulebook: up to six rules of the form <code>when &lt;the world does something&gt; -&gt; &lt;the coin does something&gt;</code>. The world is read from public sources: prices, the weather, sports results and posts on X. The coin acts with its own money, the creator fees its trading produces.</p>
+
+    <h2 id="launching"><span class="e">02</span>launching</h2>
+    <ul>
+      <li>You fill in the coin (name, ticker, picture), write the rulebook and choose a first buy.</li>
+      <li>wrld records it, derives the coin’s wallet and its mint address, and tells you one amount to send.</li>
+      <li>You send that one SOL transfer. No program approvals and no other signature.</li>
+      <li>The engine creates the coin on pump.fun from the coin’s wallet with your first buy, then sends the tokens and any unused SOL to your wallet.</li>
+      <li>From that moment the rules watch the world. Anything that happened before launch never counts.</li>
+    </ul>
+    <table class="costs" style="max-width:520px"><tr><td>first buy</td><td>your choice, 0.01–10 SOL (+2% for fees)</td></tr><tr><td>pump.fun rent and fees</td><td>about 0.03 SOL, the unused part comes back</td></tr><tr><td>gas reserve, kept in the coin’s wallet</td><td>0.015 SOL</td></tr><tr><td>wrld’s cut</td><td>nothing at launch; 5% of each fee claim</td></tr></table>
+
+    <h2 id="language"><span class="e">03</span>the language</h2>
+    <p>Rules are stored as data and shown as one line each. The fingerprint is the first 12 hex characters of the SHA-256 of the rulebook’s canonical JSON. It is written into the coin’s pump.fun description at launch, so anyone can check the rulebook on the coin’s page against it.</p>
+    <div class="code" id="langEx"></div>
+
+    <h2 id="sensors"><span class="e">04</span>sensors</h2>
+    <table class="tbl"><thead><tr><th>watch</th><th>conditions</th><th>source</th></tr></thead><tbody>
+      <tr><td>price</td><td>SOL, BTC, ETH, XRP, DOGE, BONK, WIF goes above / below a price, pumps / dumps X% in 1h or 24h</td><td>Coinbase spot and candles</td></tr>
+      <tr><td>weather</td><td>any city: rains, snows, clear sky, hotter / colder than X°C, wind above X km/h</td><td>Open-Meteo</td></tr>
+      <tr><td>sports</td><td>a team in the Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, MLS, NBA, NFL, MLB or NHL wins / loses a game</td><td>ESPN scoreboards</td></tr>
+      <tr><td>x posts</td><td>an account posts anything, or a post containing a word</td><td>X’s embed timeline (the X API when configured)</td></tr>
+      <tr><td>the coin</td><td>its market cap reaches $X, it graduates from pump.fun</td><td>Dexscreener, the bonding curve</td></tr>
+      <tr><td>time</td><td>every N hours after launch</td><td>the engine’s clock</td></tr>
+    </tbody></table>
+
+    <h2 id="actions"><span class="e">05</span>actions</h2>
+    <ul>
+      <li><code class="burn">buyback_burn(N% chest)</code>: buys the coin with N% of the chest and burns every token bought.</li>
+      <li><code class="air">airdrop_holders(N% chest)</code>: buys the coin and sends the tokens to the top holders, pro rata.</li>
+      <li><code class="hold">pay_holders(N% chest)</code>: sends SOL to the top holders (up to 20), pro rata to their bags.</li>
+      <li><code class="crea">pay_creator(N% chest)</code>: sends SOL to the wallet that launched the coin.</li>
+    </ul>
+    <p>Holders are the largest token accounts on-chain, minus the bonding curve, pools (program-owned accounts) and the coin’s own wallet. There is no sell action.</p>
+
+    <h2 id="firing"><span class="e">06</span>when a rule fires</h2>
+    <ul>
+      <li><b>Levels</b> (prices, weather, market cap) must be true on two reads in a row, at least 45 seconds apart. Then they fire once, and re-arm only after the level stops being true.</li>
+      <li><b>Events</b> (a game result, a post, a time period) fire once per event, and only for events after launch.</li>
+      <li>Every rule has a cooldown: at most one fire per N hours (1–168).</li>
+      <li>A rule spends N% of the chest at the moment it fires. Below 0.002 SOL the fire is recorded but nothing is spent.</li>
+      <li>If the action fails, it is retried on the next passes, up to three times, and every try is logged.</li>
+    </ul>
+
+    <h2 id="custody"><span class="e">07</span>custody</h2>
+    <p>Each coin’s wallet and mint keys are derived on the server from one master secret and the launch id, using HMAC-SHA256. They are never stored. The derived wallet is the coin’s pump.fun creator, so pump.fun pays creator fees to it.</p>
+    <ul>
+      <li>The engine’s code has four spending actions, the four above, plus the launch hand-back, refunds and wrld’s 5%.</li>
+      <li>You can audit every one: the coin’s wallet is public, and each action appears in the coin’s log with its transaction.</li>
+      <li>What you are trusting: that the engine keeps running, and that the master secret stays secret. If either fails, rules stop firing; the fees stay in the coin’s wallet.</li>
+    </ul>
+
+    <h2 id="fees"><span class="e">08</span>fees and the chest</h2>
+    <p>When at least 0.003 SOL of creator fees is waiting, the engine claims it into the coin’s wallet. wrld takes 5% of each claim. The rest, minus a 0.015 SOL gas reserve, is the chest that rules spend from. Swaps go through PumpPortal’s local transaction API, which adds its own 0.5% to each trade.</p>
+
+    <h2 id="sources"><span class="e">09</span>sources, live</h2>
+    <p>Each row times a real read from the server right now.</p>
+    <div style="overflow-x:auto"><table class="tbl" id="probe"><thead><tr><th>source</th><th>status</th><th>ms</th><th>sample</th></tr></thead><tbody><tr><td colspan="4" class="dim">press try</td></tr></tbody></table></div>
+    <div class="cta" style="margin-top:12px"><button class="br" type="button" id="probeGo">try every source</button><button class="br" type="button" id="selfGo">run the engine self-test</button></div>
+    <div class="code" id="selfOut" style="margin-top:12px" hidden></div>
+
+    <h2 id="failures"><span class="e">10</span>failure paths</h2>
+    <table class="tbl"><thead><tr><th>if</th><th>then</th></tr></thead><tbody>
+      <tr><td>the deposit never arrives in full within 3 hours</td><td>the launch expires and anything sent is returned</td></tr>
+      <tr><td>creating the coin fails</td><td>the whole deposit is returned to your wallet</td></tr>
+      <tr><td>a source doesn’t answer</td><td>the rule waits; it never fires on a missing reading</td></tr>
+      <tr><td>an action fails three times</td><td>the fire is closed and the rule re-arms on the next crossing</td></tr>
+      <tr><td>the chest is under 0.002 SOL when a rule fires</td><td>the fire is recorded; nothing is spent</td></tr>
+      <tr><td>the engine stops</td><td>nothing fires; the fees stay in the coin’s wallet</td></tr>
+    </tbody></table>
+
+    <h2 id="api"><span class="e">11</span>api</h2>
+    <table class="tbl"><thead><tr><th>endpoint</th><th>what</th></tr></thead><tbody>
+      <tr><td><a class="u" href="/api/world" target="_blank">/api/world</a></td><td>the live board</td></tr>
+      <tr><td>/api/world?op=eval (POST {rules})</td><td>read a rulebook against the world now</td></tr>
+      <tr><td><a class="u" href="/api/coins" target="_blank">/api/coins</a></td><td>every coin; <code>?m=&lt;mint&gt;</code> for one, <code>?op=log</code> for the engine log</td></tr>
+      <tr><td><a class="u" href="/api/launch?op=config" target="_blank">/api/launch?op=config</a></td><td>costs and limits</td></tr>
+      <tr><td>/api/tick</td><td>one engine pass (rate-limited, safe to call)</td></tr>
+    </tbody></table>
+  </article>
+  <aside class="toc"><div class="h">on this page</div><a href="#overview">overview</a><a href="#language">the language</a><a href="#custody">custody</a><a href="#sources">sources, live</a><a href="#failures">failure paths</a><a href="/launch">launch a coin -&gt;</a></aside>
+</main>
+<div style="height:60px"></div>
+<script src="/assets/js/rules.js?v=2"></script>
+<script src="/assets/js/core.js?v=2"></script>
+<script>
+(function () {
+  const { $, $$, esc, api } = WRLD; WRLD.tape(); WRLD.nudge();
+  $$('[data-nav]').forEach(a => a.classList.toggle('on', a.dataset.nav === 'docs'));
+  $('[data-copy-link]').addEventListener('click', e => { e.preventDefault(); WRLD.copy(location.href.split('#')[0], 'Link copied'); });
+  const ex = WR.TEMPLATES.flatMap(t => t.rules).slice(0, 8).map(WR.normalize);
+  $('#langEx').innerHTML = WRLD.hl(WR.book(ex));
+  const nav = $$('.dnav a'), secs = nav.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+  const spy = () => { let cur = secs[0]; for (const s of secs) if (s.getBoundingClientRect().top < 120) cur = s; nav.forEach(a => a.classList.toggle('on', cur && a.getAttribute('href') === '#' + cur.id)); };
+  addEventListener('scroll', spy, { passive: true }); spy();
+  $('#probeGo').addEventListener('click', async e => {
+    e.currentTarget.disabled = true; $('#probe tbody').innerHTML = '<tr><td colspan="4" class="dim">reading…</td></tr>';
+    const r = await api('/api/world?op=probe'); e.currentTarget.disabled = false;
+    if (!r || !r.ok) { $('#probe tbody').innerHTML = '<tr><td colspan="4" class="red">the server didn’t answer</td></tr>'; return; }
+    $('#probe tbody').innerHTML = r.rows.map(x => `<tr><td>${esc(x.name)}</td><td>${x.ok ? '<span class="g">ok</span>' : '<span class="burn">offline</span>'}</td><td>${x.ms}</td><td class="dim">${esc(x.sample || '—')}</td></tr>`).join('');
+  });
+  $('#selfGo').addEventListener('click', async e => {
+    const b = e.currentTarget; b.disabled = true; const o = $('#selfOut'); o.hidden = false; o.textContent = 'building a create, a claim and checking the keys with a throwaway wallet…';
+    const r = await api('/api/launch?op=selftest'); b.disabled = false;
+    if (!r || !r.ok) { o.textContent = (r && r.error) || 'the self-test didn’t answer'; return; }
+    const line = (k, v) => v ? `${k.padEnd(7)} ${v.ok ? 'built' : 'FAILED'}${v.bytes ? ' · ' + v.bytes + ' bytes' : ''}${v.sim ? ' · simulated: ' + (v.sim.err ? JSON.stringify(v.sim.err).slice(0, 90) : 'ok') : ''}${v.error ? ' · ' + v.error : ''}${v.stable != null ? ' · derived keys stable: ' + v.stable : ''}` : '';
+    o.textContent = ['# ' + r.note, line('create', r.create), line('claim', r.claim), line('keys', r.keys)].filter(Boolean).join('\n');
+  });
+})();
+</script>
+</body>
+</html>
