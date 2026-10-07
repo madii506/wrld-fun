@@ -163,9 +163,14 @@ async function markets(cat) {
   return L.remember('pm:' + cat, 120000, async () => {
     const r = await L.getJson(`${GAMMA}/events?tag_slug=${c.tag}&active=true&closed=false&order=volume24hr&ascending=false&limit=20`, {}, 9000);
     const evs = Array.isArray(r.json) ? r.json : [];
-    const list = [];
-    for (const ev of evs) for (const m of (ev.markets || [])) { if (m.closed || m.active === false) continue; const x = mkt(m, ev); if (x && x.q) list.push(x); }
-    list.sort((a, b) => b.vol - a.vol);
+    // one market per event (the most traded one with live odds), so the list is varied and nothing reads 0.1%
+    const list = [], rest = [];
+    for (const ev of evs) {
+      const ms = (ev.markets || []).filter(m => !m.closed && m.active !== false).map(m => mkt(m, ev)).filter(x => x && x.q);
+      const live = ms.filter(x => x.yes >= 3 && x.yes <= 97).sort((a, b) => b.vol - a.vol);
+      if (live.length) { list.push(live[0]); rest.push(...live.slice(1)); }
+    }
+    rest.sort((a, b) => b.vol - a.vol); list.push(...rest);
     if (!list.length) return { ok: false, error: 'polymarket did not answer', src: 'https://polymarket.com' };
     return { ok: true, cat, markets: list.slice(0, 14), src: 'https://polymarket.com/' + c.tag, at: now() };
   });
