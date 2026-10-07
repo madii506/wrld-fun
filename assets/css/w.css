@@ -271,3 +271,11 @@ details[open]::details-content { height: auto; }
   .top { gap: 10px; padding-left: 14px; padding-right: 14px; } .nav { gap: 12px; font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) { .tape .in, .cur { animation: none; } .rv { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+/* world events board */
+.evrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 18px; padding: 12px 0; border-bottom: 1px dotted var(--line); align-items: center; }
+.evrow:last-child { border-bottom: 0; }
+.evrow .q { font-weight: 700; grid-column: 1; } .evrow .o { grid-column: 2; white-space: nowrap; text-align: right; } .evrow .a { grid-column: 3; display: flex; gap: 14px; align-items: center; justify-content: flex-end; white-space: nowrap; }
+.evrow .o { font-size: 12.5px; } .evrow .bar { color: var(--green2); letter-spacing: 0; } .evrow .w { font-size: 11.5px; grid-column: 1 / -1; }
+#evTabs .br.on { font-weight: 800; }
+@media (max-width: 860px) { .evrow { grid-template-columns: minmax(0, 1fr); } .evrow .q, .evrow .o, .evrow .a { grid-column: 1; } .evrow .a { justify-content: flex-start; } .evrow .bar { font-size: 10px; } }
