@@ -166,7 +166,7 @@ async function markets(cat) {
     // one market per event (the most traded one with live odds), so the list is varied and nothing reads 0.1%
     const list = [], rest = [];
     for (const ev of evs) {
-      const ms = (ev.markets || []).filter(m => !m.closed && m.active !== false).map(m => mkt(m, ev)).filter(x => x && x.q);
+      const ms = (ev.markets || []).filter(m => !m.closed && m.active !== false).map(m => mkt(m, ev)).filter(x => x && x.q && !/^(game|map|set|round|match) \d+\s*:/i.test(x.q));   // skip in-game props
       const live = ms.filter(x => x.yes >= 3 && x.yes <= 97).sort((a, b) => b.vol - a.vol);
       if (live.length) { list.push(live[0]); rest.push(...live.slice(1)); }
     }
