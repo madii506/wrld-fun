@@ -22,7 +22,7 @@
   async function board() {
     $('#liveAt').textContent = 'reading…';
     const b = await api('/api/world');
-    if (!b || !b.ok) { $('#liveAt').innerHTML = '<span class="off">feeds offline</span>'; ['#lvPx', '#lvWx', '#lvGm'].forEach(s => { $(s).innerHTML = '<div class="row"><span class="off">source offline · retrying</span></div>'; }); nextAt = Date.now() + 20000; return; }
+    if (!b || !b.ok) { $('#liveAt').innerHTML = '<span class="off">feeds offline</span>'; ['#lvPx', '#lvWx', '#lvGm', '#lvEv'].forEach(s => { $(s).innerHTML = '<div class="row"><span class="off">source offline · retrying</span></div>'; }); nextAt = Date.now() + 20000; return; }
     $('#lvPx').innerHTML = (b.prices || []).map(p => p.ok ? `<div class="row"><span class="nm">${p.asset}</span><span class="vl">${usd(p.price)} <span class="${p.ch1h >= 0 ? 'up' : 'dn'}">${pct(p.ch1h)}</span> <span class="dim">1h</span></span>
       <span class="sp" title="last 24 hours">${spark(p.spark)}</span><span class="meta">24h <span class="${p.ch24h >= 0 ? 'up' : 'dn'}">${pct(p.ch24h)}</span> · <a class="u" href="${esc(p.src)}" target="_blank" rel="noopener">source</a></span></div>`
       : `<div class="row"><span class="nm">${esc(p.asset)}</span><span class="vl off">offline</span></div>`).join('');
@@ -31,6 +31,10 @@
       <span class="meta">${esc(w.desc)} · wind ${w.wind} km/h ${w.raining ? '<span class="tag hold">raining</span>' : ''}${w.snowing ? '<span class="tag hold">snowing</span>' : ''}${w.clear ? '<span class="tag g">clear</span>' : ''}</span></div>`
       : `<div class="row"><span class="nm">${esc(w.city)}</span><span class="vl off">offline</span></div>`).join('');
     paintPins(null);
+    const evs = b.events || [];
+    $('#lvEv').innerHTML = evs.length ? evs.map(e => e.ok === false || !e.q ? `<div class="row"><span class="nm">${esc(e.cat)}</span><span class="vl off">offline</span></div>`
+      : `<div class="row"><span class="nm">${esc(e.cat)}</span><span class="vl v"><b>YES ${e.yes}%</b></span><span class="meta" style="color:var(--ink2)">${esc(e.q)}</span><span class="meta"><a class="u" href="${esc(e.src)}" target="_blank" rel="noopener">source</a></span></div>`).join('')
+      : '<div class="row"><span class="dim">no events on the board right now</span></div>';
     const gs = b.games || [];
     $('#lvGm').innerHTML = gs.length ? gs.map(g => `<div class="row"><span class="nm">${esc(g.home)} <span class="${g.hw ? 'g' : ''}">${esc(g.hs)}</span>–<span class="${g.aw ? 'g' : ''}">${esc(g.as)}</span> ${esc(g.away)}</span>
       <span class="vl ${g.state === 'in' ? 'burn' : 'dim'}">${g.state === 'in' ? '● live' : esc(g.detail)}</span><span class="meta">${esc(g.league)}</span></div>`).join('')
@@ -44,6 +48,7 @@
 
   // ---------- how a rule fires: four boxes, a packet travelling along the wire ----------
   const SCEN = [
+    { name: 'war room', world: ['odds', 'ceasefire', 'YES > 60%'], rule: 'ceasefire odds > 60%', act: ['buyback_burn', '30% of chest'], cls: 'burn' },
     { name: 'rain maker', world: ['weather', 'London', 'raining'], rule: 'it rains in London', act: ['pay_holders', '10% of chest'], cls: 'hold' },
     { name: 'dip shield', world: ['price', 'BTC', '-5% in 1h'], rule: 'BTC dumps 5% in 1h', act: ['buyback_burn', '25% of chest'], cls: 'burn' },
     { name: 'game day', world: ['sports', 'Arsenal', 'won'], rule: 'Arsenal win a game', act: ['airdrop_holders', '20% of chest'], cls: 'air' },
@@ -72,7 +77,7 @@
 
   // ---------- try a rule ----------
   let cur = null;
-  const ed = WRLD.ruleEditor($('#tryEd'), { src: 'weather', city: { name: 'London', country: 'United Kingdom', lat: 51.509, lon: -0.126 }, op: 'rain', act: 'holders', pct: 10, cool: 12 }, (n, err) => {
+  const ed = WRLD.ruleEditor($('#tryEd'), { src: 'events', cat: 'war', op: 'above', value: 60, act: 'burn', pct: 20, cool: 12 }, (n, err) => {
     cur = n;
     $('#tryCode').innerHTML = n ? hl(WR.line(n) + '  # max once per ' + n.cool + 'h') + '\n<span class="cm"># ' + esc(WR.words(n)) + '</span>' : '<span class="cm"># ' + esc(err || 'finish the rule') + '</span>';
     $('#tryUse').href = n ? '/launch#r=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify([n]))))) : '/launch';

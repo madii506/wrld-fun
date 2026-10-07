@@ -10,7 +10,10 @@
     { id: 'usa.1', sport: 'soccer', name: 'MLS' }, { id: 'nba', sport: 'basketball', name: 'NBA' },
     { id: 'nfl', sport: 'football', name: 'NFL' }, { id: 'mlb', sport: 'baseball', name: 'MLB' }, { id: 'nhl', sport: 'hockey', name: 'NHL' },
   ];
+  const CATS = [{ id: 'war', name: 'war', tag: 'geopolitics' }, { id: 'politics', name: 'politics', tag: 'politics' }, { id: 'money', name: 'money', tag: 'economy' },
+    { id: 'sports', name: 'sports', tag: 'sports' }, { id: 'crypto', name: 'crypto', tag: 'crypto' }, { id: 'tech', name: 'tech', tag: 'tech' }];
   const SRC = {
+    events: { label: 'world events', ops: { above: 'odds rise above', below: 'odds fall below', yes: 'resolves YES', no: 'resolves NO' } },
     price: { label: 'price', ops: { above: 'goes above', below: 'goes below', up: 'pumps', down: 'dumps' } },
     weather: { label: 'weather', ops: { rain: 'it rains', snow: 'it snows', hot: 'it gets hotter than', cold: 'it gets colder than', wind: 'wind is stronger than', clear: 'the sky is clear' } },
     sports: { label: 'sports', ops: { wins: 'wins a game', loses: 'loses a game' } },
@@ -42,6 +45,11 @@
       else out.value = num(r.value, 0.00000001, 1e9);
       if (out.value == null) fail('Give the price rule a number.');
       out.value = +(+out.value).toPrecision(8);
+    } else if (src === 'events') {
+      out.cat = CATS.find(c => c.id === r.cat) ? r.cat : fail('Pick a kind of event.');
+      const m = r.market || {}; if (!/^\d{1,12}$/.test(String(m.id || '')) || !s(m.q, 160)) fail('Pick an event to watch.');
+      out.market = { id: String(m.id), q: s(m.q, 160), slug: s(m.slug, 120).replace(/[^a-z0-9-]/gi, '') };
+      if (op === 'above' || op === 'below') { out.value = num(r.value, 1, 99); if (out.value == null) fail('Give the odds in %.'); out.value = Math.round(out.value); }
     } else if (src === 'weather') {
       const c = r.city || {}; const lat = num(c.lat, -90, 90), lon = num(c.lon, -180, 180);
       if (lat == null || lon == null || !s(c.name, 60)) fail('Pick a city for the weather rule.');
@@ -77,6 +85,7 @@
     switch (r.src) {
       case 'price': return r.op === 'above' ? `price("${r.asset}") > ${usd(r.value)}` : r.op === 'below' ? `price("${r.asset}") < ${usd(r.value)}`
         : `price("${r.asset}").change(${r.win}) ${r.op === 'up' ? '>= +' : '<= -'}${r.value}%`;
+      case 'events': { const q = r.market.q.length > 60 ? r.market.q.slice(0, 57) + '…' : r.market.q; return r.op === 'above' ? `odds("${q}").yes > ${r.value}%` : r.op === 'below' ? `odds("${q}").yes < ${r.value}%` : `event("${q}").resolves(${r.op === 'yes' ? 'YES' : 'NO'})`; }
       case 'weather': { const c = `weather("${r.city.name}")`; return r.op === 'rain' ? c + '.raining' : r.op === 'snow' ? c + '.snowing' : r.op === 'clear' ? c + '.clear'
         : r.op === 'hot' ? `${c}.temp > ${r.value}°C` : r.op === 'cold' ? `${c}.temp < ${r.value}°C` : `${c}.wind > ${r.value}km/h`; }
       case 'sports': return `sports("${lg(r.league)}", "${r.team.name}").${r.op}`;
@@ -94,6 +103,7 @@
     switch (r.src) {
       case 'price': w = r.op === 'above' ? `${r.asset} goes above ${usd(r.value)}` : r.op === 'below' ? `${r.asset} drops below ${usd(r.value)}`
         : `${r.asset} ${r.op === 'up' ? 'pumps' : 'dumps'} ${r.value}% within ${r.win === '1h' ? 'an hour' : 'a day'}`; break;
+      case 'events': w = r.op === 'above' ? `the odds of “${r.market.q}” rise above ${r.value}%` : r.op === 'below' ? `the odds of “${r.market.q}” fall below ${r.value}%` : `“${r.market.q}” resolves ${r.op === 'yes' ? 'YES' : 'NO'}`; break;
       case 'weather': w = r.op === 'rain' ? `it rains in ${r.city.name}` : r.op === 'snow' ? `it snows in ${r.city.name}` : r.op === 'clear' ? `the sky is clear over ${r.city.name}`
         : r.op === 'hot' ? `${r.city.name} gets hotter than ${r.value}°C` : r.op === 'cold' ? `${r.city.name} gets colder than ${r.value}°C` : `wind in ${r.city.name} passes ${r.value} km/h`; break;
       case 'sports': w = `${r.team.name} ${r.op === 'wins' ? 'win' : 'lose'} a ${lg(r.league)} game`; break;
@@ -105,14 +115,14 @@
     return r.src === 'time' ? `Every ${r.every} hours, ${a} with ${r.pct}% of the chest.` : `When ${w}, ${a} with ${r.pct}% of the chest.`;
   }
   // a rule that watches a level fires when the level is reached, then re-arms once it isn't; an event fires once per event
-  const isEvent = r => r.src === 'sports' || r.src === 'posts' || r.src === 'time';
+  const isEvent = r => r.src === 'sports' || r.src === 'posts' || r.src === 'time' || (r.src === 'events' && (r.op === 'yes' || r.op === 'no'));
   function book(rules, meta) {
     const head = meta ? [`# ${meta.name} ($${meta.symbol})`, `# rulebook ${meta.fp || ''}`.trim()] : [];
     return head.concat(rules.map((r, i) => `${String(i + 1).padStart(2, '0')}  ${line(r)}  # max once per ${r.cool}h`)).join('\n');
   }
   // the fingerprint: sha-256 over the canonical JSON (keys in a fixed order)
   function canon(rules) {
-    const order = ['src', 'op', 'asset', 'value', 'win', 'city', 'name', 'country', 'lat', 'lon', 'league', 'team', 'id', 'handle', 'word', 'every', 'act', 'pct', 'cool'];
+    const order = ['src', 'op', 'cat', 'market', 'q', 'slug', 'asset', 'value', 'win', 'city', 'name', 'country', 'lat', 'lon', 'league', 'team', 'id', 'handle', 'word', 'every', 'act', 'pct', 'cool'];
     const sortv = v => Array.isArray(v) ? v.map(sortv) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort((a, b) => order.indexOf(a) - order.indexOf(b)).map(k => [k, sortv(v[k])])) : v;
     return JSON.stringify({ v: 1, rules: sortv(rules) });
   }
@@ -136,5 +146,5 @@
       { src: 'time', every: 6, op: 'every', act: 'burn', pct: 10, cool: 6 },
       { src: 'coin', op: 'mcap', value: 100000, act: 'holders', pct: 25, cool: 24 }] },
   ];
-  return { ASSETS, LEAGUES, SRC, ACTS, MAX_RULES, normalize, normalizeBook, cond, action, line, words, isEvent, book, canon, usd, lg, TEMPLATES };
+  return { ASSETS, LEAGUES, CATS, SRC, ACTS, MAX_RULES, normalize, normalizeBook, cond, action, line, words, isEvent, book, canon, usd, lg, TEMPLATES };
 });

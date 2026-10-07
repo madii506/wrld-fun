@@ -34,6 +34,7 @@
     if (b && b.ok) {
       for (const p of b.prices || []) if (p.ok) items.push(`<span class="it"><b>${p.asset}</b> ${usd(p.price)} <span class="${p.ch1h >= 0 ? 'up' : 'dn'}">${pct(p.ch1h)}</span> 1h</span>`);
       for (const w of b.weather || []) if (w.ok) items.push(`<span class="it"><b>${esc(w.city)}</b> ${w.temp}°C ${esc(w.desc)}</span>`);
+      for (const e of b.events || []) if (e.ok !== false && e.q) items.push(`<span class="it"><b>${esc(e.cat)}</b> ${esc(e.q.slice(0, 70))} <span class="v">YES ${e.yes}%</span></span>`);
       for (const g of (b.games || []).slice(0, 4)) items.push(`<span class="it"><b>${esc(g.home)}</b> ${esc(g.hs)}–${esc(g.as)} <b>${esc(g.away)}</b> <span class="dim">${esc(g.detail)}</span></span>`);
     }
     if (l && l.ok) for (const e of (l.log || []).slice(0, 10)) items.push(`<span class="it"><span class="ar">+&gt;</span> <b>$${esc(e.symbol)}</b> ${esc(e.text.replace(/^rule \d+ fired: /, '').slice(0, 90))}</span>`);
@@ -127,7 +128,8 @@
   // ---------- the rule editor (used by the tester on the home page and by the launcher) ----------
   const WR = window.WR;
   const opt = (v, label, sel) => `<option value="${esc(v)}"${sel ? ' selected' : ''}>${esc(label)}</option>`;
-  const teamCache = {};
+  const teamCache = {}, mkCache = {};
+  async function marketsOf(cat) { if (!mkCache[cat]) mkCache[cat] = api('/api/world?op=markets&cat=' + encodeURIComponent(cat)).then(r => (r && r.markets) || []); return mkCache[cat]; }
   async function teamsOf(league) { if (!teamCache[league]) teamCache[league] = api('/api/world?op=teams&league=' + encodeURIComponent(league)).then(r => (r && r.teams) || []); return teamCache[league]; }
   function ruleEditor(host, init, onChange, opts = {}) {
     const r = Object.assign({ src: 'price', asset: 'SOL', op: 'above', value: '', win: '1h', act: 'burn', pct: 10, cool: 6 }, init || {});
@@ -143,6 +145,12 @@
         mid += r.op === 'up' || r.op === 'down'
           ? `<input class="pct" data-k="value" type="number" step="0.5" min="0.5" max="90" placeholder="5" value="${esc(r.value)}" aria-label="percent">% in <select data-k="win" aria-label="window">${opt('1h', '1 hour', r.win === '1h')}${opt('24h', '24 hours', r.win === '24h')}</select>`
           : `$<input class="num" data-k="value" type="number" step="any" min="0" placeholder="300" value="${esc(r.value)}" aria-label="price in USD">`;
+      } else if (r.src === 'events') {
+        if (!r.cat) r.cat = 'war';
+        mid = `<select data-k="cat" aria-label="kind of event">${WR.CATS.map(c => opt(c.id, c.name, c.id === r.cat)).join('')}</select>
+          <select data-k="market" aria-label="event" style="max-width:min(420px,100%)">${r.market ? opt(r.market.id, r.market.q, true) : opt('', 'loading events…', true)}</select>
+          <select data-k="op" aria-label="condition">${Object.entries(S.ops).map(([k, v]) => opt(k, v, k === r.op)).join('')}</select>`;
+        if (r.op === 'above' || r.op === 'below') mid += `<input class="pct" data-k="value" type="number" min="1" max="99" placeholder="60" value="${esc(r.value)}" aria-label="odds percent">%`;
       } else if (r.src === 'weather') {
         mid = `<span class="city"><input data-k="cityq" type="text" placeholder="a city" value="${esc(r.city ? r.city.name : '')}" autocomplete="off" aria-label="city" style="width:150px"><span class="dd" hidden></span></span>
           <select data-k="op" aria-label="condition">${Object.entries(S.ops).map(([k, v]) => opt(k, v, k === r.op)).join('')}</select>`;
@@ -168,6 +176,13 @@
           <select data-k="act" aria-label="action">${Object.entries(WR.ACTS).map(([k, v]) => opt(k, v.label, k === r.act)).join('')}</select>
           with <input class="pct" data-k="pct" type="number" min="1" max="100" value="${esc(r.pct)}" aria-label="percent of chest">% of the chest</div>
         <div class="meta2"><span>max once per <input class="pct" data-k="cool" type="number" min="1" max="168" value="${esc(r.cool)}" aria-label="cooldown hours">h</span>${opts.remove ? '<button class="br sm x" data-rm type="button">remove</button>' : ''}</div>`;
+      if (r.src === 'events') marketsOf(r.cat).then(ms => {
+        const s = $('[data-k=market]', el); if (!s) return;
+        if (!ms.length) { s.innerHTML = opt('', 'events offline', true); s.disabled = true; return; }
+        if (r.market && !ms.find(m => m.id === r.market.id)) ms = [{ id: r.market.id, q: r.market.q, slug: r.market.slug, yes: null }, ...ms];
+        s.innerHTML = ms.map(m => `<option value="${esc(m.id)}" data-slug="${esc(m.slug)}" data-q="${esc(m.q)}"${r.market && r.market.id === m.id ? ' selected' : ''}>${esc(m.q.length > 70 ? m.q.slice(0, 67) + '…' : m.q)}${m.yes != null ? ' · ' + m.yes + '%' : ''}</option>`).join(''); s.disabled = false;
+        if (!r.market) { const m = ms[0]; r.market = { id: m.id, q: m.q, slug: m.slug }; fire(); }
+      });
       if (r.src === 'sports' && r.league) teamsOf(r.league).then(ts => {
         const s = $('[data-k=team]', el); if (!s) return;
         s.innerHTML = opt('', ts.length ? 'team…' : 'teams offline', !r.team) + ts.map(t => opt(t.id, t.name, r.team && r.team.id === t.id)).join(''); s.disabled = !ts.length;
@@ -189,8 +204,10 @@
     });
     el.addEventListener('change', e => {
       const k = e.target.getAttribute('data-k'); if (!k || k === 'cityq') return;
-      if (k === 'src') { const keep = { act: r.act, pct: r.pct, cool: r.cool }; for (const x of Object.keys(r)) delete r[x]; Object.assign(r, keep, { src: e.target.value, op: Object.keys(WR.SRC[e.target.value].ops)[0] }); if (r.src === 'price') r.asset = 'SOL'; return paint(); }
+      if (k === 'src') { const keep = { act: r.act, pct: r.pct, cool: r.cool }; for (const x of Object.keys(r)) delete r[x]; Object.assign(r, keep, { src: e.target.value, op: Object.keys(WR.SRC[e.target.value].ops)[0] }); if (r.src === 'price') r.asset = 'SOL'; if (r.src === 'events') r.cat = 'war'; return paint(); }
       if (k === 'league') { r.league = e.target.value; r.team = null; return paint(); }
+      if (k === 'cat') { r.cat = e.target.value; r.market = null; return paint(); }
+      if (k === 'market') { const o = e.target.selectedOptions[0]; r.market = e.target.value ? { id: e.target.value, q: o.dataset.q || o.textContent, slug: o.dataset.slug || '' } : null; return fire(); }
       if (k === 'team') { const o = e.target.selectedOptions[0]; r.team = e.target.value ? { id: e.target.value, name: o.textContent } : null; return fire(); }
       if (k === 'op' || k === 'win' || k === 'asset' || k === 'act') { r[k] = e.target.value; if (k === 'op') { r.value = ''; return paint(); } return fire(); }
     });
