@@ -54,6 +54,7 @@ async function prepare(req, res) {
   const dev = Number(b.devBuy);
   if (!(dev >= E.MIN_DEV && dev <= E.MAX_DEV)) return L.send(res, 200, { ok: false, error: `The first buy is between ${E.MIN_DEV} and ${E.MAX_DEV} SOL.` });
   let rules; try { rules = W.normalizeBook(b.rules); } catch (e) { return L.send(res, 200, { ok: false, error: e.rule ? e.message : 'The rulebook didn’t read right.' }); }
+  if (rules.some(r => r.src === 'posts') && !(process.env.X_BEARER || '').trim()) return L.send(res, 200, { ok: false, error: 'X post rules need the X API key, and it isn’t set yet. Use another sensor for now.' });
   const m = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(String(b.image || ''));
   if (!m) return L.send(res, 200, { ok: false, error: 'Add a picture for the coin.' });
   let img; try { img = await require('sharp')(Buffer.from(m[2], 'base64')).rotate().resize(512, 512, { fit: 'cover' }).flatten({ background: '#f6f3ec' }).jpeg({ quality: 88, mozjpeg: true }).toBuffer(); }
