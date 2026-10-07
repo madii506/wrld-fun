@@ -221,13 +221,45 @@
     return { el, get: () => { try { return WR.normalize(r); } catch { return null; } }, raw: () => r, set: v => { for (const x of Object.keys(r)) delete r[x]; Object.assign(r, v); paint(); } };
   }
 
+
+  // ---------- motion: staggered pop-in, count-ups, flashes, filling bars (all skipped under reduced motion) ----------
+  const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function stagger(el, sel, step = 45) {
+    if (!el) return; const kids = sel ? $$(sel, el) : [...el.children];
+    kids.forEach((k, i) => { k.style.setProperty('--i', Math.min(i, 14)); k.style.setProperty('--st', step + 'ms'); k.classList.remove('pop'); void k.offsetWidth; k.classList.add('pop'); });
+  }
+  function countUp(el, to, fmt, ms = 700) {
+    if (!el || !isFinite(to)) return; if (RM()) { el.textContent = fmt(to); return; }
+    const from = Number(el.dataset.v || 0), t0 = performance.now(); el.dataset.v = to;
+    const go = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(go); };
+    requestAnimationFrame(go); setTimeout(() => { el.textContent = fmt(to); }, ms + 200);
+  }
+  function flash(el, up) { if (!el || RM()) return; el.classList.remove('fl-up', 'fl-dn'); void el.offsetWidth; el.classList.add(up ? 'fl-up' : 'fl-dn'); }
+  // fill [#####-----] bars from empty, one cell at a time
+  function fillBars(root) {
+    if (!root) return; const bars = $$('[data-fill]', root);
+    bars.forEach((b, j) => {
+      const n = +b.dataset.fill, W = +b.dataset.w || 20;
+      const draw = k => { b.innerHTML = '[' + '#'.repeat(k) + '<span class="dim">' + '-'.repeat(W - k) + '</span>]'; };
+      if (RM()) return draw(n);
+      draw(0); let k = 0; const t0 = performance.now() + j * 60;
+      const go = t => { if (t < t0) return requestAnimationFrame(go); const want = Math.min(n, Math.floor((t - t0) / 28)); if (want !== k) { k = want; draw(k); } if (k < n) requestAnimationFrame(go); };
+      requestAnimationFrame(go);
+    });
+  }
+  // swap a block's content with a quick fade so tabs and refreshes never jump
+  function swap(el, html, after) {
+    if (!el) return; if (RM() || !el.innerHTML.trim()) { el.innerHTML = html; after && after(); return; }
+    el.classList.add('fading'); setTimeout(() => { el.innerHTML = html; el.classList.remove('fading'); after && after(); }, 160);
+  }
+
   // nudge the engine: every visit helps keep it awake (the server allows one pass a minute)
   function nudge() { try { if (!sessionStorage.getItem('wrld:n')) { sessionStorage.setItem('wrld:n', '1'); fetch('/api/tick', { keepalive: true }).catch(() => {}); } } catch {} }
 
   // reveal on scroll, with a sweep so anchor jumps never leave sections hidden
   function reveal() {
     const els = $$('.rv'); if (!('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('vis')); return; }
-    const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add('vis'); io.unobserve(x.target); } }), { rootMargin: '0px 0px -6% 0px' });
+    const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add('vis'); io.unobserve(x.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: .04 });
     els.forEach(e => io.observe(e));
     const sweep = () => els.forEach(e => { if (e.getBoundingClientRect().top < innerHeight) e.classList.add('vis'); });
     addEventListener('hashchange', sweep); addEventListener('scroll', sweep, { passive: true }); setTimeout(sweep, 60);
@@ -246,5 +278,5 @@
   }
 
   api('/api/launch?op=config').then(c => { if (c && c.xApi) window.WRLD_XPOSTS = true; });
-  window.WRLD = { $, $$, esc, api, post, usd, pct, sol, ago, hhmm, short, tx, acct, toast, copy, hl, tape, globe, ruleEditor, connect, wallet: () => WAL, wallets, nudge, reveal, typePrompt, caStrip, CONFIG };
+  window.WRLD = { stagger, countUp, flash, fillBars, swap, $, $$, esc, api, post, usd, pct, sol, ago, hhmm, short, tx, acct, toast, copy, hl, tape, globe, ruleEditor, connect, wallet: () => WAL, wallets, nudge, reveal, typePrompt, caStrip, CONFIG };
 })();

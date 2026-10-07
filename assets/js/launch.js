@@ -15,7 +15,7 @@
     if (eds.length >= WR.MAX_RULES) return;
     const me = {}; const ed = WRLD.ruleEditor($('#rules'), init || { src: 'price', asset: 'SOL', op: 'above', value: '', act: 'burn', pct: 10, cool: 6 }, () => book(), {
       coin: true, n: () => eds.indexOf(me) + 1, remove: () => { eds.splice(eds.indexOf(me), 1); count(); renumber(); book(); } });
-    Object.assign(me, ed); eds.push(me); count(); renumber(); book();
+    Object.assign(me, ed); eds.push(me); count(); renumber(); book(); ed.el.classList.add('pop'); ed.el.style.setProperty('--i', 0);
   }
   function renumber() { eds.forEach((e, i) => { const n = $('.n', e.el); if (n) n.textContent = 'rule ' + String(i + 1).padStart(2, '0'); }); }
   function setRules(list) { $('#rules').innerHTML = ''; eds.length = 0; list.forEach(r => addRule(r)); if (!list.length) addRule(); }

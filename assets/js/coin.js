@@ -8,7 +8,7 @@
   const none = m => { $('#none').hidden = false; $('#none').innerHTML = m; };
   if (!key) { none('No coin picked. <a class="u" href="/#coins">see every coin on wrld</a>.'); return; }
   let first = true;
-  async function load() {
+  let load = async function () {
     const r = await api('/api/coins?m=' + encodeURIComponent(key));
     if (!r || !r.ok) { if (first) none(esc((r && r.error) || 'The records didn’t answer.') + ' <a class="u" href="/#coins">see every coin on wrld</a>.'); return; }
     first = false; const c = r.coin; $('#coin').hidden = false; $('#none').hidden = true;
@@ -37,5 +37,7 @@
     $('#cWal').textContent = c.wallet; $('#cWalCp').onclick = () => copy(c.wallet, 'Wallet copied'); $('#cWalScan').href = WRLD.acct(c.wallet); $('#cRes').textContent = c.reserveSol;
     $('#cWait').textContent = c.waitingSol != null ? `creator fees waiting to be claimed: ${sol(c.waitingSol)} (claimed once at least 0.003 SOL is waiting)` : '';
   }
+  const _load = load; let firstLoad = true;
+  load = async () => { await _load(); if (firstLoad && !$('#coin').hidden) { firstLoad = false; WRLD.stagger($('#rs'), '.rstate', 70); WRLD.stagger($('#log'), '.ev', 35); WRLD.stagger($('.stats'), null, 60); } };
   load(); setInterval(() => { if (!document.hidden) load(); }, 20000);
 })();
