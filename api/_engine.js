@@ -182,6 +182,7 @@ async function claim(c, k) {
   const tx = await portal({ publicKey: c.wallet, action: 'collectCreatorFee', priorityFee: 0.00001, pool: 'pump' }, [k.wallet]);
   const sig = await sendAndConfirm(tx.serialize());
   const got = Math.max(0, (await L.balance(c.wallet)) - before);
+  if (got <= 0) return 0;
   await L.q(`UPDATE wr_coins SET claimed = claimed + $2 WHERE id=$1`, [c.id, got]);
   await L.log(c.id, 'claim', `claimed ${(got / LAMPORTS).toFixed(4)} SOL of creator fees into the chest`, { sig, sol: got / LAMPORTS });
   const cut = Math.floor(got * L.FEE_BPS / 1e4);
