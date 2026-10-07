@@ -253,6 +253,74 @@
     el.classList.add('fading'); setTimeout(() => { el.innerHTML = html; el.classList.remove('fading'); after && after(); }, 160);
   }
 
+
+  // ---------- the living background: falling ASCII trails, churning sparks, and pings where the world just did something ----------
+  function background() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.getElementById('bg')) return;
+    const cv = document.createElement('canvas'); cv.id = 'bg'; cv.setAttribute('aria-hidden', 'true'); document.body.prepend(cv);
+    const x = cv.getContext('2d'); let W = 0, H = 0, dpr = 1, CW = 8.4, CH = 17, cols = 0, rows = 0;
+    const CH_TRAIL = '.:-=+*#', CH_SPARK = '.,:;+*o#%$@', CH_PING = ['.', '·', ':', '+'];
+    const INK = '29,57,52', PALE = '181,194,189', GREEN = '79,191,124', ACC = ['194,71,14', '26,100,194', '106,85,201', '47,143,110', '150,96,0'];
+    let trails = [], sparks = [], pings = [], mouse = [];
+    function size() {
+      dpr = Math.min(1.5, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+      cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      x.setTransform(dpr, 0, 0, dpr, 0, 0); x.font = '600 13px JBM, ui-monospace, monospace'; x.textBaseline = 'top';
+      cols = Math.ceil(W / CW); rows = Math.ceil(H / CH);
+      const want = Math.max(8, Math.round(cols / (W < 700 ? 7 : 9)));
+      trails = Array.from({ length: want }, () => newTrail(true));
+    }
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const pick = s => s[Math.floor(Math.random() * s.length)];
+    function newTrail(anywhere) { return { c: Math.floor(Math.random() * cols), y: anywhere ? rnd(-rows, rows) : rnd(-20, -2), v: rnd(.12, .42), len: Math.floor(rnd(5, 15)), ch: [] }; }
+    function ping() {
+      // somewhere on the page, something just happened: a ring of dots spreads out and fades
+      pings.push({ x: rnd(.05, .95) * W, y: rnd(.08, .92) * H, r: 0, max: rnd(70, 170), c: pick(ACC), born: performance.now() });
+      if (pings.length > 6) pings.shift();
+    }
+    addEventListener('resize', size); size();
+    addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; if (Math.random() < .5) mouse.push({ c: Math.floor(e.clientX / CW), r: Math.floor(e.clientY / CH), life: 26, ch: pick(CH_SPARK) }); if (mouse.length > 40) mouse.shift(); }, { passive: true });
+    let last = 0, lastPing = 0;
+    function frame(t) {
+      requestAnimationFrame(frame);
+      if (document.hidden || t - last < 42) return; last = t;
+      x.clearRect(0, 0, W, H);
+      // trails fall down their column, bright head, fading tail
+      for (const tr of trails) {
+        tr.y += tr.v; if (Math.random() < .08 || tr.ch.length < tr.len) tr.ch.unshift(pick(CH_TRAIL)); tr.ch.length = Math.min(tr.ch.length, tr.len);
+        for (let i = 0; i < tr.ch.length; i++) {
+          const ry = Math.floor(tr.y) - i; if (ry < 0 || ry > rows) continue;
+          const a = i === 0 ? .7 : .36 * (1 - i / tr.len);
+          x.fillStyle = `rgba(${i === 0 ? GREEN : PALE},${a})`; x.fillText(tr.ch[i], tr.c * CW, ry * CH);
+        }
+        if (tr.y - tr.len > rows) Object.assign(tr, newTrail(false));
+      }
+      // sparks: single cells that re-roll their character and die
+      if (sparks.length < Math.round(cols * rows / 170)) sparks.push({ c: Math.floor(Math.random() * cols), r: Math.floor(Math.random() * rows), life: Math.floor(rnd(8, 54)), ch: pick(CH_SPARK) });
+      sparks = sparks.filter(s => s.life-- > 0);
+      for (const s of sparks) { if (Math.random() < .3) s.ch = pick(CH_SPARK); x.fillStyle = `rgba(${INK},${Math.min(.3, s.life / 80)})`; x.fillText(s.ch, s.c * CW, s.r * CH); }
+      // pings: rings snapped to the character grid
+      if (t - lastPing > 1100) { lastPing = t; ping(); }
+      pings = pings.filter(p => (t - p.born) < 2600);
+      for (const p of pings) {
+        const k = (t - p.born) / 2600, r = p.max * (1 - Math.pow(1 - k, 3)), a = .62 * (1 - k);
+        const n = Math.max(8, Math.floor(r / 6)), seen = new Set();
+        x.fillStyle = `rgba(${p.c},${a})`;
+        for (let i = 0; i < n; i++) {
+          const ang = i / n * Math.PI * 2, cx = Math.round((p.x + Math.cos(ang) * r) / CW), cy = Math.round((p.y + Math.sin(ang) * r * .55) / CH);
+          const key = cx + ':' + cy; if (seen.has(key)) continue; seen.add(key);
+          x.fillText(CH_PING[(i + Math.floor(k * 8)) % CH_PING.length], cx * CW, cy * CH);
+        }
+        if (k < .35) { x.fillStyle = `rgba(${p.c},${.7 * (1 - k / .35)})`; x.fillText('@', Math.round(p.x / CW) * CW, Math.round(p.y / CH) * CH); }
+      }
+      // the cursor leaves a short wake
+      mouse = mouse.filter(m => m.life-- > 0);
+      for (const m of mouse) { x.fillStyle = `rgba(${GREEN},${m.life / 60})`; x.fillText(m.ch, m.c * CW, m.r * CH); }
+    }
+    requestAnimationFrame(frame);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', background); else background();
+
   // nudge the engine: every visit helps keep it awake (the server allows one pass a minute)
   function nudge() { try { if (!sessionStorage.getItem('wrld:n')) { sessionStorage.setItem('wrld:n', '1'); fetch('/api/tick', { keepalive: true }).catch(() => {}); } } catch {} }
 
