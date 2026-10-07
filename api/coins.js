@@ -22,7 +22,8 @@ module.exports = async (req, res) => {
     }
     if (qy.op === 'stats') {
       const r = await L.q(`SELECT count(*) FILTER (WHERE state='live')::int AS live, COALESCE(sum(fires),0)::int AS fires, COALESCE(sum(claimed),0)::bigint AS claimed, COALESCE(sum(spent),0)::bigint AS spent FROM wr_coins`);
-      return L.send(res, 200, { ok: true, live: r[0].live, fires: r[0].fires, claimedSol: S(r[0].claimed), spentSol: S(r[0].spent) }, L.CACHE(15));
+      const t = await L.q(`SELECT v FROM wr_meta WHERE k='tick'`).catch(() => []);
+      return L.send(res, 200, { ok: true, live: r[0].live, fires: r[0].fires, claimedSol: S(r[0].claimed), spentSol: S(r[0].spent), lastTick: t.length ? new Date(Number(t[0].v)).toISOString() : null }, L.CACHE(15));
     }
     const key = String(qy.m || qy.mint || qy.id || '');
     if (key) {
