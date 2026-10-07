@@ -123,5 +123,34 @@
     $('#feed').innerHTML = log.map(e => `<div class="ev ${esc(e.kind)}"><span class="t">${ago(e.at)}</span><span><span class="kind">${esc(e.kind)}</span><a class="u" href="/coin?m=${esc(e.mint)}">$${esc(e.symbol)}</a> ${esc(e.text)}</span>
       <span class="l">${e.src ? `<a class="u" href="${esc(e.src)}" target="_blank" rel="noopener">source</a>` : ''}${e.sig ? `<a class="u" href="${WRLD.tx(e.sig)}" target="_blank" rel="noopener">tx</a>` : ''}</span></div>`).join('');
   }
+
+  // ---------- world events: tabs of live markets, each one a rule you can launch ----------
+  const evCache = {}; let evCat = 'war';
+  const bar = p => { const n = Math.round(Math.max(0, Math.min(100, p)) / 5); return `<span class="bar">[${'#'.repeat(n)}<span class="dim">${'-'.repeat(20 - n)}</span>]</span>`; };
+  const vol = v => !v ? '' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : '$' + Math.round(v);
+  const enc = o => encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(o)))));
+  $('#evTabs').innerHTML = WR.CATS.map(c => `<button class="br sm" type="button" data-cat="${c.id}">${esc(c.name)}</button>`).join('');
+  async function events(cat) {
+    evCat = cat; $$('#evTabs [data-cat]').forEach(b => b.classList.toggle('on', b.dataset.cat === cat)); $$('#evTabs [data-cat]').forEach(b => { b.style.color = b.dataset.cat === cat ? 'var(--green3)' : ''; });
+    if (!evCache[cat]) { $('#evList').innerHTML = '<div class="empty">reading the odds…</div>'; evCache[cat] = await api('/api/world?op=markets&cat=' + encodeURIComponent(cat)); }
+    if (evCat !== cat) return;
+    const r = evCache[cat];
+    if (!r || !r.ok) { $('#evList').innerHTML = '<div class="empty"><span class="off">the odds didn’t answer · try again in a minute</span></div>'; delete evCache[cat]; return; }
+    $('#evAt').textContent = 'read ' + hhmm(r.at);
+    $('#evList').innerHTML = r.markets.slice(0, 8).map(m => {
+      const up = Math.min(95, Math.max(5, Math.ceil((m.yes + 10) / 5) * 5));
+      const rule = [{ src: 'events', cat, market: { id: m.id, q: m.q, slug: m.slug }, op: 'above', value: up, act: 'burn', pct: 20, cool: 12 }];
+      return `<div class="evrow"><div class="q">${esc(m.q)}</div>
+        <div class="o">${bar(m.yes)} <b class="v">YES ${m.yes}%</b> <span class="dim">${vol(m.vol)}${m.vol ? ' 24h' : ''}</span></div>
+        <div class="a"><a class="u" href="${esc(m.src)}" target="_blank" rel="noopener">source</a><a class="br sm" href="/launch#r=${enc(rule)}">wire a coin <span class="p">-&gt;</span></a></div>
+        <div class="w dim">e.g. when YES passes ${up}% → buy back &amp; burn 20% of the chest</div></div>`;
+    }).join('');
+  }
+  $('#evTabs').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) events(b.dataset.cat); });
+  events('war');
+
+  // the engine's heartbeat: when it last read the world, from its own lock
+  api('/api/coins?op=stats').then(s => { if (s && s.ok && s.lastTick) { $('#stTick').textContent = ago(s.lastTick); $('#stTickL').textContent = 'since the engine last read the world (it runs every ~5 min)'; } });
+
   coins(); feed(); setInterval(() => { if (!document.hidden) { coins(); feed(); } }, 30000);
 })();
