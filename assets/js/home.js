@@ -47,7 +47,7 @@
     { name: 'rain maker', world: ['weather', 'London', 'raining'], rule: 'it rains in London', act: ['pay_holders', '10% of chest'], cls: 'hold' },
     { name: 'dip shield', world: ['price', 'BTC', '-5% in 1h'], rule: 'BTC dumps 5% in 1h', act: ['buyback_burn', '25% of chest'], cls: 'burn' },
     { name: 'game day', world: ['sports', 'Arsenal', 'won'], rule: 'Arsenal win a game', act: ['airdrop_holders', '20% of chest'], cls: 'air' },
-    { name: 'x watch', world: ['posts', '@a_handle', 'said the word'], rule: '@a_handle posts "gm"', act: ['buyback_burn', '50% of chest'], cls: 'burn' },
+    { name: 'moon watch', world: ['price', 'SOL', 'above $300'], rule: 'SOL goes above $300', act: ['pay_holders', '30% of chest'], cls: 'hold' },
   ];
   const pad = (s, n) => (s + ' '.repeat(n)).slice(0, n);
   let si = 0, step = 0, paused = false;

@@ -162,7 +162,7 @@
       }
       el.innerHTML = `${opts.n ? `<span class="n">rule ${String(opts.n()).padStart(2, '0')}</span>` : ''}
         <div class="ln"><span class="w">when</span>
-          <select data-k="src" aria-label="what to watch">${Object.entries(WR.SRC).filter(([k]) => opts.coin || k !== 'coin').map(([k, v]) => opt(k, v.label, k === r.src)).join('')}</select>
+          <select data-k="src" aria-label="what to watch">${Object.entries(WR.SRC).filter(([k]) => (opts.coin || k !== 'coin') && (k !== 'posts' || window.WRLD_XPOSTS || r.src === 'posts')).map(([k, v]) => opt(k, v.label, k === r.src)).join('')}</select>
           ${mid}</div>
         <div class="ln" style="margin-top:8px"><span class="arr">-&gt;</span>
           <select data-k="act" aria-label="action">${Object.entries(WR.ACTS).map(([k, v]) => opt(k, v.label, k === r.act)).join('')}</select>
@@ -228,5 +228,6 @@
     else el.innerHTML = `<span class="k">$WRLD</span><span>The token doesn’t exist yet. Anyone posting a contract address before it appears here is not us.</span>`;
   }
 
+  api('/api/launch?op=config').then(c => { if (c && c.xApi) window.WRLD_XPOSTS = true; });
   window.WRLD = { $, $$, esc, api, post, usd, pct, sol, ago, hhmm, short, tx, acct, toast, copy, hl, tape, globe, ruleEditor, connect, wallet: () => WAL, wallets, nudge, reveal, typePrompt, caStrip, CONFIG };
 })();
